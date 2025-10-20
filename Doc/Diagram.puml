@@ -1,0 +1,22 @@
+@startuml
+
+package "8-Puzzle A* Solver" {
+  [UserInterface]
+  [ExperimentRunner]
+  [AStarSolver]
+  [StateGenerator]
+  [PuzzleMechanics]
+  [Heuristics]
+
+  UserInterface --> ExperimentRunner : calls ui_benchmark()
+  UserInterface --> AStarSolver : calls a_star() directly (via ui_solve_once)
+  ExperimentRunner --> StateGenerator : generates boards
+  ExperimentRunner --> AStarSolver : calls solver repeatedly
+  AStarSolver --> PuzzleMechanics : uses neighbors(), is_solvable()
+  AStarSolver --> Heuristics : uses h(n) (manhattan/hamming)
+  StateGenerator --> PuzzleMechanics : uses neighbors() to walk
+}
+[statisticsLib]
+ExperimentRunner --> statisticsLib : uses mean, stdev
+
+@enduml
