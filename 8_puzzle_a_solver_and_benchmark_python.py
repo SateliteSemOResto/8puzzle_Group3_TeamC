@@ -19,24 +19,27 @@ from statistics import mean, stdev
 
 State = Tuple[int, ...]                 # 9-length tuple; 0 is the blank
 GOAL: State = (1, 2, 3, 4, 5, 6, 7, 8, 0)
-GOAL_POS = {v: (i // 3, i % 3) for i, v in enumerate(GOAL)}
+GOAL_POS = {v: (i // 3, i % 3) for i, v in enumerate(GOAL)}     #retrieves the goal position of a value
 
 # ----------------------------- Heuristics -----------------------------------
 
 def hamming(state: State, goal: State = GOAL) -> int:
     """Number of misplaced tiles (excluding blank)."""
     return sum(1 for i, v in enumerate(state) if v != 0 and v != goal[i])
+    """Iterates through the current state tuple, adding both the index (i, from 0 to 8) and the value (v, the tile number at that position).
+    It sums to the count everything both conditions are true (meaning the tile is not the blank + is misplaced)"""
 
 def manhattan(state: State, goal_pos: Dict[int, Tuple[int, int]] = GOAL_POS) -> int:
     """Sum of |dr|+|dc| from each tile to its goal position (excluding blank)."""
     d = 0
     for i, v in enumerate(state):
-        if v == 0:
+        if v == 0:                  #avoiding blank tile
             continue
         r, c = divmod(i, 3)
         gr, gc = goal_pos[v]
         d += abs(r - gr) + abs(c - gc)
     return d
+    """Given the index and value of a tile, r (row) and c (column) equal the index in a 3x3 grid, gr and gc equal the goal 3x3 grid index of the value."""
 
 # ----------------------------- Mechanics ------------------------------------
 
@@ -53,20 +56,24 @@ def neighbors(state: State) -> List[State]:
             s[i0], s[j] = s[j], s[i0]
             out.append(tuple(s))
     return out
+    """After getting the 3x3 index of the tile with value "0", it is created a list of the state, since a truple is impermutable. 
+    Then every slide is checked for it's plausibility, and the ones possible are added to a list of states. """
 
 def is_solvable(state: State) -> bool:
     """Solvable iff inversion count is even (for 3×3)."""
-    arr = [x for x in state if x != 0]
+    arr = [x for x in state if x != 0]      #all tiles except blank
     inv = 0
     for i in range(len(arr)):
         for j in range(i + 1, len(arr)):
             if arr[i] > arr[j]:
                 inv += 1
     return inv % 2 == 0
+    """After creating a new list with all tiles except the blank, it goes through all the tiles to check where there are inversions.
+     After summing all inversion, it is divided by two. Returning true (solvable) if the remainder is zero, or false (not solvable) if the remainder is one."""
 
 # ----------------------------- A* Search ------------------------------------
 
-def _calc_f(g: int, state: State, heuristic: Callable[[State], int]) -> int:
+def calculateCosts(g: int, state: State, heuristic: Callable[[State], int]) -> int:
     return g + heuristic(state)
 
 def reconstruct_path(parents: Dict[State, Optional[State]], end: State) -> List[State]:
@@ -96,7 +103,7 @@ def a_star(start: State,
     parents: Dict[State, Optional[State]] = {start: None}
     closed: set[State] = set()
 
-    heappush(open_heap, (_calc_f(0, start, heuristic), next(counter), start))
+    heappush(open_heap, (calculateCosts(0, start, heuristic), next(counter), start))
     expanded = 0
 
     while open_heap:
@@ -120,7 +127,7 @@ def a_star(start: State,
             if ng < g_score.get(nb, math.inf):
                 g_score[nb] = ng
                 parents[nb] = current
-                heappush(open_heap, (_calc_f(ng, nb, heuristic), next(counter), nb))
+                heappush(open_heap, (calculateCosts(ng, nb, heuristic), next(counter), nb))
 
     return [], expanded, time.perf_counter() - t0  # should not occur for solvable states
 
@@ -141,7 +148,7 @@ def generate_random_solvable_board(steps: int = 50,
     assert is_solvable(s)
     return s
 
-# ----------------------------- Pretty-print & UI helpers --------------------
+# ----------------------------- UI & helpers --------------------
 
 def format_state(state: State) -> str:
     rows = []
