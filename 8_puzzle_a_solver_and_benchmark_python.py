@@ -1,14 +1,4 @@
 #!/usr/bin/env python3
-"""
-8-Puzzle A* — all-in-one script
-- A* search with Hamming & Manhattan heuristics
-- Random solvable generator (random walk from goal)
-- Interactive UI: Solve one puzzle / Benchmark heuristics
-- Experiment runner: prints summary table (mean & std)
-
-Python: 3.9+ (standard library only)
-Author: Junu Rahman (single-file consolidation)
-"""
 
 from heapq import heappush, heappop
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
@@ -17,11 +7,17 @@ from statistics import mean, stdev
 
 # ----------------------------- Types & constants -----------------------------
 
-State = Tuple[int, ...]                 # 9-length tuple; 0 is the blank
-GOAL: State = (1, 2, 3, 4, 5, 6, 7, 8, 0)
-GOAL_POS = {v: (i // 3, i % 3) for i, v in enumerate(GOAL)}     #retrieves the goal position of a value
+State = Tuple[int,...]                 #tuple of ints
+GOAL: State = (1, 2, 3, 4, 5, 6, 7, 8, 0) #0 is the blank
+
+def goal_pos(v: int):
+    i = GOAL.index(v)
+    row= i//3
+    col=1%3
+    return (row, col)
 
 # ----------------------------- Heuristics -----------------------------------
+
 
 def hamming(state: State, goal: State = GOAL) -> int:
     """Number of misplaced tiles (excluding blank)."""
@@ -29,47 +25,48 @@ def hamming(state: State, goal: State = GOAL) -> int:
     """Iterates through the current state tuple, adding both the index (i, from 0 to 8) and the value (v, the tile number at that position).
     It sums to the count everything both conditions are true (meaning the tile is not the blank + is misplaced)"""
 
-def manhattan(state: State, goal_pos: Dict[int, Tuple[int, int]] = GOAL_POS) -> int:
+def manhattan(state: State) -> int:
     """Sum of |dr|+|dc| from each tile to its goal position (excluding blank)."""
     d = 0
     for i, v in enumerate(state):
         if v == 0:                  #avoiding blank tile
             continue
         r, c = divmod(i, 3)
-        gr, gc = goal_pos[v]
+        gr, gc = goal_pos(v)
         d += abs(r - gr) + abs(c - gc)
     return d
     """Given the index and value of a tile, r (row) and c (column) equal the index in a 3x3 grid, gr and gc equal the goal 3x3 grid index of the value."""
 
 # ----------------------------- Mechanics ------------------------------------
 
-def neighbors(state: State) -> List[State]:
-    """All valid states by sliding a tile into the blank."""
-    i0 = state.index(0)
-    r, c = divmod(i0, 3)
-    out: List[State] = []
-    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-        nr, nc = r + dr, c + dc
-        if 0 <= nr < 3 and 0 <= nc < 3:
-            j = nr * 3 + nc
-            s = list(state)
-            s[i0], s[j] = s[j], s[i0]
-            out.append(tuple(s))
-    return out
-    """After getting the 3x3 index of the tile with value "0", it is created a list of the state, since a truple is impermutable. 
-    Then every slide is checked for it's plausibility, and the ones possible are added to a list of states. """
+def neighbors(state: State):
+    """All valid states by sliding the blank tile around."""
+    zeroPos = state.index(0)        #getting the blank tiles index
+    zRow, zCol = divmod(zeroPos, 3)     #getting blank tiles 3x3 index
+    possibles: List[State] = []
+    for moveRow, moveCol in [(-1, 0), (1, 0), (0, -1), (0, 1)]: #for every movement
+        newR, newC = zRow + moveRow, zCol + moveCol
+        if 0 <= newR < 3 and 0 <= newC < 3:     #if the movement is possible
+            newZeroPos = newR * 3 + newC        #change blank tiles position
+            nState = list(state)                      #get a new stable, tuples are impermutable
+            nState[zeroPos], nState[newZeroPos] = nState[newZeroPos], nState[zeroPos]
+            possibles.append(tuple(nState))            #add new state after movement to list of possible states
+    return possibles
+    """After getting the 3x3 index of the blank tile (value "0"), it is created a lists of the new possible states. 
+    Every blank tile movement is checked for its plausibility, and the ones possible are added to a list of states. """
 
 def is_solvable(state: State) -> bool:
-    """Solvable iff inversion count is even (for 3×3)."""
+    """Solvable if inversion count is even (for 3×3)."""
     arr = [x for x in state if x != 0]      #all tiles except blank
     inv = 0
-    for i in range(len(arr)):
-        for j in range(i + 1, len(arr)):
-            if arr[i] > arr[j]:
-                inv += 1
+    for i in range(len(arr)):       #for every tile on the board
+        for j in range(i + 1, len(arr)):    #for every tile +1
+            if arr[i] > arr[j]:         #checks if the previous tile is bigger than the next
+                inv += 1    #if so, an inversion was found
     return inv % 2 == 0
-    """After creating a new list with all tiles except the blank, it goes through all the tiles to check where there are inversions.
-     After summing all inversion, it is divided by two. Returning true (solvable) if the remainder is zero, or false (not solvable) if the remainder is one."""
+    """After creating a new list with all tiles except the blank, it goes through all the tiles to check
+     where there are inversions. After summing all inversion, it is divided by two. Returning true (solvable)
+      if the remainder is zero, or false (not solvable) if the remainder is one."""
 
 # ----------------------------- A* Search ------------------------------------
 
@@ -133,21 +130,26 @@ def a_star(start: State,
 
 # ----------------------------- Random generator -----------------------------
 
-def generate_random_solvable_board(steps: int = 50,
-                                   seed: Optional[int] = None,
-                                   start_from: State = GOAL) -> State:
-    """Random walk from GOAL -> guaranteed solvable state."""
-    rng = random.Random(seed)
-    s = start_from
-    prev: Optional[State] = None
-    for _ in range(steps):
-        succ = neighbors(s)
-        if prev is not None and len(succ) > 1:
-            succ = [x for x in succ if x != prev] or succ
-        s, prev = rng.choice(succ), s
+def generateRandomSolvableBoard(steps: int, startState: State = GOAL) :
+    """Random walk from GOAL state == guaranteed solvable state."""
+
+    rand = random.Random()  #initializes randomizer
+    s = startState
+    prev: State = None
+
+    for i in range(steps):      #for however many steps to diverge from goal state
+        nextStates = neighbors(s)       #get possible boards
+        if prev is not None and len(nextStates) > 1:
+            nextStates = [x for x in nextStates if x != prev] #creates new list with only new moves
+        if nextStates is None:      #if there aren't any, return last board
+            assert is_solvable(s)
+            return s
+        prev = s
+        s= rand.choice(nextStates)
     assert is_solvable(s)
     return s
-
+    """Creates a new board from backward stepping from the solved board. For however many steps, it checks board neighbors
+     (possible moves) and picks a random one. After making sure the steps that preceeded that board can't be picked."""
 # ----------------------------- UI & helpers --------------------
 
 def format_state(state: State) -> str:
@@ -201,9 +203,7 @@ def ui_solve_once():
         start = parse_state_from_input()
     else:
         steps = ask_int("Random scramble steps?", default=40, min_val=1)
-        seed_q = input("Provide seed? [y/N] ").strip().lower() == "y"
-        seed = ask_int("Seed (int)?") if seed_q else None
-        start = generate_random_solvable_board(steps=steps, seed=seed)
+        start = generateRandomSolvableBoard(steps=steps)
 
     print("\nStart state:\n" + format_state(start))
     print(f"Solvable: {is_solvable(start)}")
@@ -230,7 +230,7 @@ def run_experiment(num_trials: int = 100,
         ("Manhattan", lambda s: manhattan(s)),
     ]
     for t in range(1, num_trials + 1):
-        start = generate_random_solvable_board(scramble_moves, seed=rng.randint(0, 10**9))
+        start = generateRandomSolvableBoard(scramble_moves)
         for name, h in heuristics:
             path, expanded, elapsed = a_star(start, GOAL, h)
             rows.append({
