@@ -1,4 +1,14 @@
 #!/usr/bin/env python3
+"""
+8-Puzzle A* — all-in-one script
+- A* search with Hamming & Manhattan heuristics
+- Random solvable generator (random walk from goal)
+- Interactive UI: Solve one puzzle / Benchmark heuristics
+- Experiment runner: prints summary table (mean & std)
+
+Python: 3.9+ (standard library only)
+Author: Junu Rahman (single-file consolidation)
+"""
 
 from heapq import heappush, heappop
 from typing import Callable, Dict, Iterable, List, Optional, Tuple
@@ -7,74 +17,62 @@ from statistics import mean, stdev
 
 # ----------------------------- Types & constants -----------------------------
 
-State = Tuple[int,...]                 #tuple of ints
-GOAL: State = (1, 2, 3, 4, 5, 6, 7, 8, 0) #0 is the blank
-
-def goal_pos(v: int):
-    i = GOAL.index(v)
-    row= i//3
-    col=1%3
-    return (row, col)
+State = Tuple[int, ...]                 # 9-length tuple; 0 is the blank
+GOAL: State = (1, 2, 3, 4, 5, 6, 7, 8, 0)
+GOAL_POS = {v: (i // 3, i % 3) for i, v in enumerate(GOAL)}
 
 # ----------------------------- Heuristics -----------------------------------
-
 
 def hamming(state: State, goal: State = GOAL) -> int:
     """Number of misplaced tiles (excluding blank)."""
     return sum(1 for i, v in enumerate(state) if v != 0 and v != goal[i])
-    """Iterates through the current state tuple, adding both the index (i, from 0 to 8) and the value (v, the tile number at that position).
-    It sums to the count everything both conditions are true (meaning the tile is not the blank + is misplaced)"""
 
-def manhattan(state: State) -> int:
+def manhattan(state: State, goal_pos: Dict[int, Tuple[int, int]] = GOAL_POS) -> int:
     """Sum of |dr|+|dc| from each tile to its goal position (excluding blank)."""
     d = 0
     for i, v in enumerate(state):
-        if v == 0:                  #avoiding blank tile
+        if v == 0:
             continue
         r, c = divmod(i, 3)
-        gr, gc = goal_pos(v)
+        gr, gc = goal_pos[v]
         d += abs(r - gr) + abs(c - gc)
     return d
-    """Given the index and value of a tile, r (row) and c (column) equal the index in a 3x3 grid, gr and gc equal the goal 3x3 grid index of the value."""
 
 # ----------------------------- Mechanics ------------------------------------
 
-def neighbors(state: State):
-    """All valid states by sliding the blank tile around."""
-    zeroPos = state.index(0)        #getting the blank tiles index
-    zRow, zCol = divmod(zeroPos, 3)     #getting blank tiles 3x3 index
-    possibles: List[State] = []
-    for moveRow, moveCol in [(-1, 0), (1, 0), (0, -1), (0, 1)]: #for every movement
-        newR, newC = zRow + moveRow, zCol + moveCol
-        if 0 <= newR < 3 and 0 <= newC < 3:     #if the movement is possible
-            newZeroPos = newR * 3 + newC        #change blank tiles position
-            nState = list(state)                      #get a new stable, tuples are impermutable
-            nState[zeroPos], nState[newZeroPos] = nState[newZeroPos], nState[zeroPos]
-            possibles.append(tuple(nState))            #add new state after movement to list of possible states
-    return possibles
-    """After getting the 3x3 index of the blank tile (value "0"), it is created a lists of the new possible states. 
-    Every blank tile movement is checked for its plausibility, and the ones possible are added to a list of states. """
+def neighbors(state: State) -> List[State]:
+    """All valid states by sliding a tile into the blank."""
+    i0 = state.index(0)
+    r, c = divmod(i0, 3)
+    out: List[State] = []
+    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        nr, nc = r + dr, c + dc
+        if 0 <= nr < 3 and 0 <= nc < 3:
+            j = nr * 3 + nc
+            s = list(state)
+            s[i0], s[j] = s[j], s[i0]
+            out.append(tuple(s))
+    return out
 
 def is_solvable(state: State) -> bool:
-    """Solvable if inversion count is even (for 3×3)."""
-    arr = [x for x in state if x != 0]      #all tiles except blank
+    """Solvable iff inversion count is even (for 3×3)."""
+    arr = [x for x in state if x != 0]
     inv = 0
-    for i in range(len(arr)):       #for every tile on the board
-        for j in range(i + 1, len(arr)):    #for every tile +1
-            if arr[i] > arr[j]:         #checks if the previous tile is bigger than the next
-                inv += 1    #if so, an inversion was found
+    for i in range(len(arr)):
+        for j in range(i + 1, len(arr)):
+            if arr[i] > arr[j]:
+                inv += 1
     return inv % 2 == 0
-    """After creating a new list with all tiles except the blank, it goes through all the tiles to check
-     where there are inversions. After summing all inversion, it is divided by two. Returning true (solvable)
-      if the remainder is zero, or false (not solvable) if the remainder is one."""
 
 # ----------------------------- A* Search ------------------------------------
 
-def calculateCosts(g: int, state: State, heuristic: Callable[[State], int]) -> int:
+def _calc_f(g: int, state: State, heuristic: Callable[[State], int]) -> int:
+    """Calculate total cost f(n) = g(n) + h(n).""" 
     return g + heuristic(state)
 
-def reconstruct_path(parents: Dict[State, Optional[State]], end: State) -> List[State]:
-    path = [end]
+def reconstruct_path(parents: Dict[State, Optional[State]], goal_state: State) -> List[State]:
+    """Reconstruct path from goal to start using parent pointers."""
+    path = [goal_state]
     while parents[path[-1]] is not None:
         path.append(parents[path[-1]])
     path.reverse()
@@ -84,73 +82,81 @@ def a_star(start: State,
            goal: State = GOAL,
            heuristic: Callable[[State], int] = manhattan,
            time_limit_seconds: Optional[float] = None) -> Tuple[List[State], int, float]:
-    """
-    Returns: (solution_path, nodes_expanded, elapsed_seconds)
-    Empty path -> not solved (unsolvable or timed out).
-    """
+    """ Returns: (solution_path, number_of_nodes_expanded, time_taken_in_seconds)
+    Empty path -> not solved (unsolvable or timed out)."""
+
+    #Step 1: Check if puzzle is already solved or unsolvable
     if start == goal:
         return [start], 0, 0.0
     if not is_solvable(start):
         return [], 0, 0.0
 
-    t0 = time.perf_counter()
-    counter = itertools.count()                         # tie-breaker
-    open_heap: List[Tuple[int, int, State]] = []       # (f, tie, state)
-    g_score: Dict[State, int] = {start: 0}
-    parents: Dict[State, Optional[State]] = {start: None}
-    closed: set[State] = set()
+    #Step 2: Initialize variables
+    start_time = time.perf_counter()
+    open_list: List[Tuple[int, int, State]] = [] #Priority queue: (f_score, tie_breaker, state)
+    g_scores: Dict[State, int] = {start: 0} #Cost from start to each state
+    parents: Dict[State, Optional[State]] = {start: None} #Path tracking
+    visited: set[State] = set() #Explored states
+    tie_breaker = itertools.count() #Ensures consistent orderning
+    nodes_expanded = 0
 
-    heappush(open_heap, (calculateCosts(0, start, heuristic), next(counter), start))
-    expanded = 0
+    #Step3: Add start state to queue
+    f_start = _calc_f(0, start, heuristic)
+    heappush(open_list, (f_start, next(tie_breaker), start))
 
-    while open_heap:
-        if time_limit_seconds is not None and (time.perf_counter() - t0) > time_limit_seconds:
-            return [], expanded, time.perf_counter() - t0
-
-        f, _, current = heappop(open_heap)
-        if current in closed:
+    #Step 4: Main loop
+    while open_list:
+        #Optional timeout check
+        if time_limit_seconds and (time.perf_counter() - start_time) > time_limit_seconds:
+            return [], nodes_expanded, time.perf_counter() - start_time
+        
+        #Get state with lowest f(n)
+        _,_, current = heappop(open_list)
+        if current in visited:
             continue
-        closed.add(current)
-        expanded += 1
+        visited.add(current)
+        nodes_expanded +=1
 
+        #Goal check
         if current == goal:
-            return reconstruct_path(parents, current), expanded, time.perf_counter() - t0
-
-        gc = g_score[current]
-        for nb in neighbors(current):
-            if nb in closed:
+            path = reconstruct_path(parents, current)
+            return path, nodes_expanded, time.perf_counter() - start_time
+        
+        #Step5: Explore neighbors
+        current_g = g_scores[current]
+        for neighbor in neighbors(current):
+            if neighbor in visited:
                 continue
-            ng = gc + 1
-            if ng < g_score.get(nb, math.inf):
-                g_score[nb] = ng
-                parents[nb] = current
-                heappush(open_heap, (calculateCosts(ng, nb, heuristic), next(counter), nb))
 
-    return [], expanded, time.perf_counter() - t0  # should not occur for solvable states
+            tentative_g = current_g +1 #Each move costs 1
+            if tentative_g < g_scores.get(neighbor, math.inf):
+                g_scores[neighbor] = tentative_g
+                parents[neighbor] = current
+                f_score = _calc_f(tentative_g, neighbor, heuristic)
+                heappush(open_list, (f_score, next(tie_breaker), neighbor))
+        
+    #No solution found
+    return[], nodes_expanded, time.perf_counter() - start_time
+
 
 # ----------------------------- Random generator -----------------------------
 
-def generateRandomSolvableBoard(steps: int, startState: State = GOAL) :
-    """Random walk from GOAL state == guaranteed solvable state."""
-
-    rand = random.Random()  #initializes randomizer
-    s = startState
-    prev: State = None
-
-    for i in range(steps):      #for however many steps to diverge from goal state
-        nextStates = neighbors(s)       #get possible boards
-        if prev is not None and len(nextStates) > 1:
-            nextStates = [x for x in nextStates if x != prev] #creates new list with only new moves
-        if nextStates is None:      #if there aren't any, return last board
-            assert is_solvable(s)
-            return s
-        prev = s
-        s= rand.choice(nextStates)
+def generate_random_solvable_board(steps: int = 50,
+                                   seed: Optional[int] = None,
+                                   start_from: State = GOAL) -> State:
+    """Random walk from GOAL -> guaranteed solvable state."""
+    rng = random.Random(seed)
+    s = start_from
+    prev: Optional[State] = None
+    for _ in range(steps):
+        succ = neighbors(s)
+        if prev is not None and len(succ) > 1:
+            succ = [x for x in succ if x != prev] or succ
+        s, prev = rng.choice(succ), s
     assert is_solvable(s)
     return s
-    """Creates a new board from backward stepping from the solved board. For however many steps, it checks board neighbors
-     (possible moves) and picks a random one. After making sure the steps that preceeded that board can't be picked."""
-# ----------------------------- UI & helpers --------------------
+
+# ----------------------------- Pretty-print & UI helpers --------------------
 
 def format_state(state: State) -> str:
     rows = []
@@ -203,7 +209,9 @@ def ui_solve_once():
         start = parse_state_from_input()
     else:
         steps = ask_int("Random scramble steps?", default=40, min_val=1)
-        start = generateRandomSolvableBoard(steps=steps)
+        seed_q = input("Provide seed? [y/N] ").strip().lower() == "y"
+        seed = ask_int("Seed (int)?") if seed_q else None
+        start = generate_random_solvable_board(steps=steps, seed=seed)
 
     print("\nStart state:\n" + format_state(start))
     print(f"Solvable: {is_solvable(start)}")
@@ -230,7 +238,7 @@ def run_experiment(num_trials: int = 100,
         ("Manhattan", lambda s: manhattan(s)),
     ]
     for t in range(1, num_trials + 1):
-        start = generateRandomSolvableBoard(scramble_moves)
+        start = generate_random_solvable_board(scramble_moves, seed=rng.randint(0, 10**9))
         for name, h in heuristics:
             path, expanded, elapsed = a_star(start, GOAL, h)
             rows.append({
