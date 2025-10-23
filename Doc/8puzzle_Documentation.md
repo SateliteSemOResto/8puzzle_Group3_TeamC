@@ -6,7 +6,7 @@
 |---------------------------|-------------------------------------------------------------------|
 | Junu Rahman                	 | Heuristics and benchmark                                          |
 | Helena Mouro		            | Generator, setup, types and constants, format state and mechanics |
-| 				           |                                                                   |
+| Theresa Hartmann				           | A* search                                                                  |
 | 					          |                                                                   |
 
 ### Short task description
@@ -23,7 +23,7 @@ The solver uses a priority queue to select nodes with the smallest f-value. Each
 |------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
 | Heuristics                	 |                                                                                                                                                                                                                                                                | hamming(state)<br/>manhattan(state)                                                          |
 | Mechanics		               | Actions inside boards: checks all neighbors ( possible boards deriving from a state, from a blank tile movement) and if a board is solvable (if the number of inversions, when a tile is bigger then its following, is dividable by 2, the board is solvable). | neighbors(state)<br/>is_solvable(state)                                                      |
-| A* Search				                         |                                                                                                                                                                                                                                                                | a_star(...)<br/>calculateCosts(...)<br/>reconstruct_path(...)                                |
+| A* Search				                         | Expplores puzzle states using a priority queue (heap) based on cost so far and estimated cost to goal. Reconstructs the solution path once the goal is reached.                                                                                                                                                                                                                                                               | a_star(...)<br/>reconstruct_path(...)                                |
 | Random generator					                        | Creates new boards which are solvable.                                                                                                                                                                                                                         | generate_random_solvable_board(...)                                                          |
 | UI & helpers					                        |                                                                                                                                                                                                                                                                | format_state(state)<br/>ask_int(...)<br/> parse_state_from_input(...)<br/>choose_heuristic(...) |
 | UI actions				                        |                                                                                                                                                                                                                                                                | ui_solve_once()<br/>ui_benchmark()|
@@ -32,6 +32,9 @@ The solver uses a priority queue to select nodes with the smallest f-value. Each
 
 ### Design decisions
 -why truple choosen to save the puzzles
+-A* search - tried to choose very clear variable names and comment on steps to explain and support logic/ process understanding
+-In A* search a priority queue (min-heap) was used to manage the open list. This makes sure that the puzzle state with the lowest estimated cost is always selected first, because we wanted to make it as efficient as possible. The heap stores each state along with its f(n) score, which combines the actual cost from the start (g) and the estimated cost to the goal (h). This allows A* to explore the most promising path first. We also decided on using a heap in order to avoid manually searching trough all the remaining states, which would be slower and less scalable. 
+
 
 ### Discussion and conclusion
 In 100 random trials:
