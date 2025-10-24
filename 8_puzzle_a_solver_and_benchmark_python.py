@@ -157,26 +157,46 @@ def generate_random_solvable_board(steps: int = 50,
     return s
 
 # ----------------------------- Pretty-print & UI helpers --------------------
+# This function makes the 3x3 puzzle.
+# Example:
+# (1,2,3,4,5,6,7,8,0) becomes:
+# 1 2 3
+# 4 5 6
+# 7 8 .
 
 def format_state(state: State) -> str:
     rows = []
-    for r in range(3):
+    for r in range(3): # Loop through each of the 3 rows
         row = state[3*r:3*r+3]
-        rows.append(" ".join("." if x == 0 else str(x) for x in row))
-    return "\n".join(rows)
+        rows.append(" ".join("." if x == 0 else str(x) for x in row)) # Replace 0 with a dot "." and join numbers with spaces
+    return "\n".join(rows) # Combine all rows with line breaks
 
-def ask_int(prompt: str, default: Optional[int] = None, min_val: Optional[int] = None) -> int:
+# This function safely asks the user to type a whole number.
+# It repeats until the input is valid (a number, not a letter).
+# It also supports a default value and a minimum allowed value.
+
+def ask_int(prompt, default=None, min_val=None):
     while True:
-        raw = input(f"{prompt} " + (f"[default {default}] " if default is not None else "")).strip()
-        if not raw and default is not None:
+        if default is not None:
+            user_input = input(f"{prompt} [default {default}]: ")
+        else:
+            user_input = input(f"{prompt}: ")
+        if user_input == "" and default is not None:  # If user pressed Enter with no input, use the default
             return default
         try:
-            val = int(raw)
-        except ValueError:
-            print("Please enter an integer."); continue
-        if min_val is not None and val < min_val:
-            print(f"Must be >= {min_val}"); continue
-        return val
+            number = int(user_input) # try to convert text to a number
+        except:
+            print("Please type a whole number.")
+            continue # go back and ask again
+
+        if min_val is not None and number < min_val:  # Check if the number is at least the minimum allowed
+            print(f"The number must be at least {min_val}.")
+            continue  # too small, ask again
+        return number
+
+
+# This function lets the user enter their own puzzle manually.
+# It checks that they enter 9 numbers (0–8) with no duplicates.
 
 def parse_state_from_input() -> State:
     print("Enter 9 numbers (0..8) row-wise; 0 is blank. Example: 1 2 3 4 5 6 7 8 0")
@@ -192,63 +212,96 @@ def parse_state_from_input() -> State:
             print("Numbers must be a permutation of 0..8."); continue
         return tuple(nums)  # type: ignore
 
+# This function asks which heuristic the user wants:
+# 1 = Hamming, 2 = Manhattan
 def choose_heuristic() -> Callable[[State], int]:
     while True:
         print("Choose heuristic:\n  1) Hamming (misplaced tiles)\n  2) Manhattan (sum of distances)")
-        c = input("> ").strip()
-        if c == "1": return lambda s: hamming(s, GOAL)
-        if c == "2": return lambda s: manhattan(s)
-        print("Invalid choice. Try again.")
+        choice = input("Enter 1 or 2: ").strip()
+        if choice == "1":
+            return lambda s: hamming(s, GOAL)
+        elif choice == "2":
+            return lambda s: manhattan(s)
+        else:
+            print("Invalid choice. Please Try again.")
 
 # ----------------------------- UI actions -----------------------------------
 
 def ui_solve_once():
     print("\n=== Solve a single puzzle ===")
-    src = (input("Use (r)andom or (m)anual state? [r/m] ").strip().lower() or "r")
-    if src.startswith("m"):
+
+    # Ask user: random or manual puzzle
+    choice = input("Use random or manual state? (r/m): ").strip().lower()
+    if choice == "":
+        choice = "r"  # default is random
+
+    # Get the starting puzzle
+    if choice == "m":
+        # User enters puzzle manually
         start = parse_state_from_input()
     else:
-        steps = ask_int("Random scramble steps?", default=40, min_val=1)
-        seed_q = input("Provide seed? [y/N] ").strip().lower() == "y"
-        seed = ask_int("Seed (int)?") if seed_q else None
+        # Random puzzle: ask for scramble steps and optional seed
+        steps = ask_int("How many Random scramble steps?", default=40, min_val=1)
+        use_seed = input("Do you want to give a seed number? [y/N] ").strip().lower()
+        if use_seed == "y":
+            seed = ask_int("Enter seed number (whole number) ")
+        else:
+            seed = None
         start = generate_random_solvable_board(steps=steps, seed=seed)
 
+    # Show starting puzzle board
     print("\nStart state:\n" + format_state(start))
     print(f"Solvable: {is_solvable(start)}")
+    # Ask which heuristic to use (Hamming or Manhattan)
     hfun = choose_heuristic()
-    print("Solving...")
-    path, expanded, elapsed = a_star(start, GOAL, hfun)
-    if not path:
-        print("No solution (unsolvable or timed out)."); return
 
+    # Solve the puzzle using A* algorithm
+    print("Solving, please wait...")
+    path, expanded, elapsed = a_star(start, GOAL, hfun)
+
+    # If no solution found (unsolvable or timeout)
+    if not path:
+        print("No solution (unsolvable or timed out).");
+        return
+
+    # Show final result
     print(f"\nSolved in {len(path)-1} moves; expanded {expanded} nodes; {elapsed*1000:.2f} ms.")
-    if input("Show solution steps? [y/N] ").strip().lower() == "y":
+    # Ask if user wants to see every step of the solution
+    show_steps = input("Show solution steps? [y/N] ").strip().lower()
+    if show_steps == "y" :
         for i, st in enumerate(path):
             print(f"\nStep {i}:\n{format_state(st)}")
 
 # ----------------------------- Experiment / Benchmark -----------------------
+# This function runs many random puzzles and compares the two heuristics.
+def run_experiment(num_trials: int = 100, seed: int = 123, scramble_moves: int = 50) -> List[dict]:
 
-def run_experiment(num_trials: int = 100,
-                   seed: int = 123,
-                   scramble_moves: int = 50) -> List[dict]:
-    rng = random.Random(seed)
+    random_gen = random.Random(seed)
     rows: List[dict] = []
+
+    # List of heuristics to test
     heuristics: List[Tuple[str, Callable[[State], int]]] = [
         ("Hamming", lambda s: hamming(s, GOAL)),
         ("Manhattan", lambda s: manhattan(s)),
     ]
+    # Run the given number of trials
     for t in range(1, num_trials + 1):
-        start = generate_random_solvable_board(scramble_moves, seed=rng.randint(0, 10**9))
-        for name, h in heuristics:
-            path, expanded, elapsed = a_star(start, GOAL, h)
+        # Make a random solvable puzzle
+        start = generate_random_solvable_board(scramble_moves, seed=random_gen.randint(0, 10**9))
+        # Solve the puzzle using both heuristics
+        for name, heuristic_function in heuristics:
+            path, expanded, elapsed = a_star(start, GOAL, heuristic_function)
             rows.append({
                 "trial": t,
                 "heuristic": name,
                 "nodes_expanded": expanded,
-                "runtime_ms": elapsed * 1000.0,
+                "runtime_ms": elapsed * 1000.0, # convert seconds to ms
                 "solution_length": len(path) - 1 if path else 0,
             })
     return rows
+
+# This function calculates averages (mean) and spread (standard deviation)
+# for each heuristic's results.
 
 def summarize(rows: List[dict]) -> List[dict]:
     by_h = {"Hamming": [], "Manhattan": []}
@@ -256,6 +309,7 @@ def summarize(rows: List[dict]) -> List[dict]:
         by_h[r["heuristic"]].append(r)
     out = []
     for name, items in by_h.items():
+        # Helper function to get a list of one column
         def col(k): return [x[k] for x in items]
         out.append({
             "heuristic": name,
@@ -267,47 +321,74 @@ def summarize(rows: List[dict]) -> List[dict]:
             "mean_solution_length":round(mean(col("solution_length")), 2),
             "std_solution_length": round(stdev(col("solution_length")), 4),
         })
+        # Sort so Hamming appears first
     out.sort(key=lambda d: d["heuristic"])
     return out
 
+# This function prints the results nicely as a table
 def print_table(rows: List[dict]) -> None:
-    hdr = ("heuristic | trials | mean_nodes_expanded | std_nodes_expanded | "
+    header = ("heuristic | trials | mean_nodes_expanded | std_nodes_expanded | "
            "mean_runtime_ms | std_runtime_ms | mean_solution_length | std_solution_length")
-    print(hdr); print("-"*len(hdr))
+    print(header); print("-"*len(header))
     for r in rows:
         print(f"{r['heuristic']:<10} | {r['trials']:<6} | "
               f"{r['mean_nodes_expanded']:<19} | {r['std_nodes_expanded']:<18} | "
               f"{r['mean_runtime_ms']:<15} | {r['std_runtime_ms']:<14} | "
               f"{r['mean_solution_length']:<19} | {r['std_solution_length']}")
 
+# This function interacts with the user and runs the benchmark.
 def ui_benchmark():
     print("\n=== Benchmark (random cases) ===")
+    # Ask for number of trials (how many random puzzles)
     try: t = int(input("Trials [100]: ") or 100)
     except ValueError: t = 100
-    try: sc = int(input("Scramble steps per case [50]: ") or 50)
-    except ValueError: sc = 50
-    seed_in = input("Seed (int) or blank: ").strip()
-    seed = int(seed_in) if seed_in else 123
-    rows = run_experiment(num_trials=t, seed=seed, scramble_moves=sc)
+    # Ask for number of random moves to scramble each puzzle
+    try: scramble_steps = int(input("Scramble steps per case [50]: ") or 50)
+    except ValueError: scramble_steps = 50
+    # Ask for random seed safely (no crash on letters)
+    while True:
+        seed_in = input("Seed (int) or blank: ").strip()
+        if seed_in == "":
+            seed = 123
+            break
+        try:
+            seed = int(seed_in)
+            break
+        except ValueError:
+            print("Please type a whole number or leave it blank.")
+            # loop again until user enters valid number
+        # --------------------------------
+     # Run experiment and print the results
+    rows = run_experiment(num_trials=t, seed=seed, scramble_moves=scramble_steps)
     print("\n8-PUZZLE A* — Hamming vs. Manhattan")
-    print(f"(trials={t}, scramble={sc}, seed={seed})\n")
+    print(f"(trials={t}, scramble={scramble_steps}, seed={seed})\n")
     print_table(summarize(rows))
 
 # ----------------------------- Main menu ------------------------------------
 
+# This is the main function — it shows the menu and lets the user
+# choose what they want to do: solve one puzzle, run benchmarks, or quit.
 def main():
+    # Print the program title
     print("8-Puzzle A* Solver (Hamming & Manhattan)")
+    # Show the goal (final) puzzle state so the user knows what we are solving toward
     print("Goal state:\n" + format_state(GOAL))
     while True:
+        # Show menu options
         print("\nMenu:\n  1) Solve one puzzle\n  2) Benchmark heuristics\n  3) Quit")
+        # Ask the user for their choice
         c = input("> ").strip()
+        # Option 1 → user wants to solve a puzzle
         if c == "1":
             ui_solve_once()
+        # Option 2 → user wants to run benchmark comparison
         elif c == "2":
             ui_benchmark()
+        # Option 3 → user wants to exit the program
         elif c == "3":
             print("Bye!")
             break
+        # Any other input → invalid choice
         else:
             print("Invalid choice. Try 1, 2 or 3.")
 

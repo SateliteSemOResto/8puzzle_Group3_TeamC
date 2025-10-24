@@ -2,12 +2,12 @@
 
 ### Team
 
-| Name 						               | Part                                                              |
-|---------------------------|-------------------------------------------------------------------|
+| Name 						                | Part                                                              |
+|----------------------------|-------------------------------------------------------------------|
 | Junu Rahman                	 | Heuristics and benchmark                                          |
-| Helena Mouro		            | Generator, setup, types and constants, format state and mechanics |
-| Theresa Hartmann				           | A* search                                                                  |
-| 					          |                                                                   |
+| Helena Mouro		             | Generator, setup, types and constants, format state and mechanics |
+| Theresa Hartmann				       | A* search                                                         |
+| Arooj Shahzadi			          | UI                                                                |
 
 ### Short task description
 The 8-puzzle is a 3×3 sliding-tile puzzle where eight numbered tiles and one empty space must be rearranged to achieve a goal configuration. It is a classic problem in Artificial Intelligence for evaluating search algorithms. A* search is used because it guarantees optimality and completeness when the heuristic is admissible.
