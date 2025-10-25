@@ -246,11 +246,6 @@ def ui_solve_once():
     else:
         # Random puzzle: ask for scramble steps and optional seed
         steps = ask_int("How many Random scramble steps?", default=40, min_val=1)
-        use_seed = input("Do you want to give a seed number? [y/N] ").strip().lower()
-        if use_seed == "y":
-            seed = ask_int("Enter seed number (whole number) ")
-        else:
-            seed = None
         start = generateRandomSolvableBoard(steps=steps)
 
     # Show starting puzzle board
