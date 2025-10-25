@@ -18,6 +18,7 @@ The A* algorithm evaluates nodes using the function f(n) = g(n) + h(n), where g(
 Both heuristics are admissible and consistent. However, Manhattan distance is generally more informative because it accounts for how far each tile is from its goal rather than just whether it is misplaced.
 
 ### Software architecture diagram
+
 ![UML Component Diagram](Diagram.png)
 
 ### Short descriptions of modules and interfaces

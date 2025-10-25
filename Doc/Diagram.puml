@@ -2,21 +2,26 @@
 
 package "8-Puzzle A* Solver" {
   [UserInterface]
-  [ExperimentRunner]
+  [Experiment]
   [AStarSolver]
-  [StateGenerator]
-  [PuzzleMechanics]
+  [RandomGenerator]
+  [Mechanics]
   [Heuristics]
 
-  UserInterface --> ExperimentRunner : calls ui_benchmark()
-  UserInterface --> AStarSolver : calls a_star() directly (via ui_solve_once)
-  ExperimentRunner --> StateGenerator : generates boards
-  ExperimentRunner --> AStarSolver : calls solver repeatedly
-  AStarSolver --> PuzzleMechanics : uses neighbors(), is_solvable()
-  AStarSolver --> Heuristics : uses h(n) (manhattan/hamming)
-  StateGenerator --> PuzzleMechanics : uses neighbors() to walk
+  UserInterface --> RandomGenerator : generateRandomSolvableBoard()
+  UserInterface --> Heuristics : imports hamming(), manhattan()
+  UserInterface --> AStarSolver : calls a_star(start, goal, heuristic)
+  UserInterface --> Experiment : runs ui_benchmark()
+  Experiment --> RandomGenerator : generates test boards
+  Experiment --> Heuristics : uses both heuristics
+  Experiment --> AStarSolver : runs solver repeatedly
+  AStarSolver --> Mechanics : uses neighbors(), is_solvable()
+  AStarSolver --> Heuristics : calls h(n) in calculateCosts()
+  RandomGenerator --> Mechanics : uses neighbors() to scramble, is_solvable() to check validity
+
 }
+
 [statisticsLib]
-ExperimentRunner --> statisticsLib : uses mean, stdev
+Experiment --> statisticsLib : mean(), stdev()
 
 @enduml
