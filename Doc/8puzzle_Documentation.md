@@ -38,12 +38,10 @@ The solver uses a priority queue to select nodes with the smallest f-value. Each
 
 
 ### Design decisions
--why truple choosen to save the puzzles - The puzzle states were represented as tuples of integers because tuples are immutable and hashable, allowing them to be used safely as keys in dictionaries and members of sets. This makes it easy to check whether a state has been visited and to store parent relationships efficiently. Tuples are also lightweight and compact, offering a simple and efficient way to represent the 3×3 board without extra class overhead
--A* search - tried to choose very clear variable names and comment on steps to explain and support logic/ process understanding
--In A* search a priority queue (min-heap) was used to manage the open list. This makes sure that the puzzle state with the lowest estimated cost is always selected first, because we wanted to make it as efficient as possible. The heap stores each state along with its f(n) score, which combines the actual cost from the start (g) and the estimated cost to the goal (h). This allows A* to explore the most promising path first. We also decided on using a heap in order to avoid manually searching trough all the remaining states, which would be slower and less scalable
-
--why one class- Finally, the solver was designed around one main class or functional module rather than multiple classes. This keeps the structure simple and emphasizes the algorithmic logic instead of object-oriented complexity. The functions are modular and self-contained, making the program easy to test, extend, and understand while focusing on how the search operates rather than on managing extra abstractions.
-
+Throughout our work, our team attempted to choose very clear variable names and comment on steps to explain and support logic/ process understanding.
+The puzzle states were represented as tuples of integers. tuples are immutable and hashable, allowing them to be used safely as keys in dictionaries and members of sets. This makes it easy to check whether a state has been visited and to store parent relationships efficiently. 
+In A* search a priority queue (min-heap) was used to manage the open list. This makes sure that the puzzle state with the lowest estimated cost is always selected first, because we wanted to make it as efficient as possible. The heap stores each state along with its f(n) score, which combines the actual cost from the start (g) and the estimated cost to the goal (h). This allows A* to explore the most promising path first. We also decided on using a heap in order to avoid manually searching trough all the remaining states, which would be slower and less scalable
+Finally, the solver was designed around one main class or functional module rather than multiple classes. This keeps the structure simple and emphasizes the algorithmic logic instead of object-oriented complexity. 
 
 ### Discussion and conclusion
 In 100 random trials:
