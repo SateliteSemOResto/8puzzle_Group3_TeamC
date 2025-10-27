@@ -6,7 +6,7 @@
 |----------------------------|----------------------------------------------|
 | Arooj Shahzadi			          | User Interface                               |
 | Helena Mouro		             | Generator, types and constants and mechanics |
-| Junu Rahman                	 | Heuristics and benchmark                     |
+| Junu Rahman                | Heuristics and benchmark                   |
 | Theresa Hartmann				       | A* search                                    |
 
 
@@ -43,22 +43,39 @@ The puzzle states were represented as tuples of integers. tuples are immutable a
 In A* search a priority queue (min-heap) was used to manage the open list. This makes sure that the puzzle state with the lowest estimated cost is always selected first, because we wanted to make it as efficient as possible. The heap stores each state along with its f(n) score, which combines the actual cost from the start (g) and the estimated cost to the goal (h). This allows A* to explore the most promising path first. We also decided on using a heap in order to avoid manually searching trough all the remaining states, which would be slower and less scalable
 Finally, the solver was designed around one main class or functional module rather than multiple classes. This keeps the structure simple and emphasizes the algorithmic logic instead of object-oriented complexity. 
 
-### Discussion and conclusion
+### Discussion and COnclusion
 In 100 random trials:
- - Hamming mean nodes expanded: 13044.7
- - Manhattan mean nodes expanded: 1494.5
+ - Hamming mean nodes expanded: 14761.33
+ - Manhattan mean nodes expanded: 1491.47
  - Hamming standard deviation: 1805.27
- The Manhattan heuristic required about 90% fewer node expansions on average, demonstrating higher efficiency.
+The Manhattan heuristic required about 90% fewer node expansions on average, demonstrating higher efficiency.
 Manhattan distance significantly reduced both time and memory usage compared to Hamming. In difficult configurations, Hamming expanded tens of thousands of nodes, while Manhattan often required fewer than 3,000. This supports the claim that a more accurate heuristic reduces the effective branching factor.
-Both heuristics ensured optimal solutions. However, Manhattan dominates Hamming because it provides tighter estimates of the remaining cost. A* with Manhattan therefore explores fewer states, resulting in lower time complexity.
+Both heuristics ensured optimal solutions.
+However, Manhattan dominates Hamming because it provides tighter estimates of the remaining cost. A* with Manhattan therefore explores fewer states, resulting in lower time complexity.
 The relationship between heuristic accuracy and performance is exponential: as h(n) approaches the true cost, the number of explored nodes drops sharply. This explains the large observed difference between the two heuristics.
 The A* algorithm efficiently solves the 8-puzzle problem. The Manhattan heuristic outperforms the Hamming heuristic in terms of both runtime and node expansions. Therefore, it is a more suitable heuristic for grid-based search problems.
 
+<img width="2837" height="631" alt="image" src="https://github.com/user-attachments/assets/57d097db-ecf1-44eb-85aa-61b151d45fc5" />
+
 Both heuristics ensured optimal solutions. However, Manhattan dominates Hamming because it provides tighter estimates of the remaining cost. A* with Manhattan therefore explores fewer states, resulting in lower time complexity.
 The relationship between heuristic accuracy and performance is exponential: as h(n) approaches the true cost, the number of explored nodes drops sharply. This explains the large observed difference between the two heuristics.
 
 The A* algorithm efficiently solves the 8-puzzle problem. The Manhattan heuristic outperforms the Hamming heuristic in terms of both runtime and node expansions. Therefore, it is a more suitable heuristic for grid-based search problems.
 
+
+### Possible Improvements in Future
+Heuristics & search
+Manhattan + linear conflict (tighter admissible h).
+Pattern databases (PDBs) for stronger admissible heuristics.
+IDA* (memory-bounded optimal search) or RBFS/A*MB if memory becomes limiting.
+Bidirectional search (with caution; needs consistent meeting criteria).
+Move ordering & duplicate detection refinements.
+
+Engineering
+CSV export of raw and summary results; add plots.
+Config CLI (trials, scramble, seed, heuristic set).
+GUI board to visualize moves; step-through animation.
+Unit tests for neighbors, is_solvable, heuristics, and small paths.
 ### Conclusion
 The A* algorithm efficiently solves the 8-puzzle problem. The Manhattan heuristic outperforms the Hamming heuristic in terms of both runtime and node expansions. Therefore, it is a more suitable heuristic for grid-based search problems.
 
