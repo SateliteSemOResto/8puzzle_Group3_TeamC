@@ -100,6 +100,8 @@ Analysis of Results: The benchmark clearly demonstrates the superior performance
 2. Run Time: The reduction in expanded nodes translates directly into faster computation time, with h2​ requiring only 7.53 ms on average, compared to 72.69 ms for h1​.
 3. Optimality: Since both heuristics are admissible, the resulting mean solution length (21.36) is identical for both, confirming that the A* algorithm finds the optimal path regardless of the admissible heuristic used.
 Theoretical Justification: This performance disparity is explained by the concept of dominance. h2​ is considered the better heuristic because it dominates h1​, meaning that from any node n, h2​(n)>h1​(n). Because h2​ provides a higher (more accurate) estimate of the true cost to the goal while still being admissible, it leads to better pruning of the search tree, thereby reducing the time and space complexity in practice.
+<img width="1314" height="380" alt="image" src="https://github.com/user-attachments/assets/54e099b6-207d-4a27-a05d-d05def0fb2ac" />
+
 
 
 Personal Experience:
