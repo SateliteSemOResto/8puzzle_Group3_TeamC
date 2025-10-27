@@ -43,7 +43,7 @@ The puzzle states were represented as tuples of integers. tuples are immutable a
 In A* search a priority queue (min-heap) was used to manage the open list. This makes sure that the puzzle state with the lowest estimated cost is always selected first, because we wanted to make it as efficient as possible. The heap stores each state along with its f(n) score, which combines the actual cost from the start (g) and the estimated cost to the goal (h). This allows A* to explore the most promising path first. We also decided on using a heap in order to avoid manually searching trough all the remaining states, which would be slower and less scalable
 Finally, the solver was designed around one main class or functional module rather than multiple classes. This keeps the structure simple and emphasizes the algorithmic logic instead of object-oriented complexity. 
 
-### Discussion and COnclusion
+### Discussion and Conclusion
 In 100 random trials:
  - Hamming mean nodes expanded: 14761.33
  - Manhattan mean nodes expanded: 1491.47
