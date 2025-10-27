@@ -36,6 +36,8 @@ flowchart LR
 Module Descriptions and Interfaces
 The following is a list of key submodules implemented, detailing their purpose and interface requirements
 <img width="1376" height="1119" alt="image" src="https://github.com/user-attachments/assets/eea1d8e4-5287-4678-b42f-0856fb44a527" />
+<img width="1375" height="446" alt="image" src="https://github.com/user-attachments/assets/593c7ea7-a6fe-4436-8a22-bcdc145ccc87" />
+
 Design Decisions:
  Separation of concerns (clean layers)
 UI layer: menus, prompts, pretty printing only (no search logic).
@@ -90,6 +92,8 @@ Data Structure Selection: The choice of data structures was crucial for mitigati
 • Open List (States to Explore): A Priority Queue was used. This efficiently manages the frontier by ensuring that the node with the minimum total cost f(s) is always selected next for expansion, which is the defining characteristic of A* search.
 • Closed List (Explored States): A Set was used. Sets allow for extremely fast lookups (O(1) complexity) to check whether a state has already been fully explored, preventing redundant searches and cycles
 Quantitative Results and Comparison: The performance comparison was conducted over 100 random, solvable start states for each heuristic. We measured Memory Effort (expanded nodes) and Run Time (computation time)
+<img width="1388" height="571" alt="image" src="https://github.com/user-attachments/assets/d62a86cf-85f6-4a1b-a931-67166eaad541" />
+
 
 Analysis of Results: The benchmark clearly demonstrates the superior performance of the Manhattan Distance (h_2) heuristic compared to the Hamming Distance (h1​).
 1. Memory Effort (Expanded Nodes): h2​ expanded a mean of 1,491.47 nodes, which is nearly ten times fewer nodes than h1​ (14,761.33 nodes). This confirms that h2​ performs significantly better in terms of memory usage and search tree pruning.
