@@ -92,7 +92,8 @@ Data Structure Selection: The choice of data structures was crucial for mitigati
 • Open List (States to Explore): A Priority Queue was used. This efficiently manages the frontier by ensuring that the node with the minimum total cost f(s) is always selected next for expansion, which is the defining characteristic of A* search.
 • Closed List (Explored States): A Set was used. Sets allow for extremely fast lookups (O(1) complexity) to check whether a state has already been fully explored, preventing redundant searches and cycles
 Quantitative Results and Comparison: The performance comparison was conducted over 100 random, solvable start states for each heuristic. We measured Memory Effort (expanded nodes) and Run Time (computation time)
-<img width="1388" height="571" alt="image" src="https://github.com/user-attachments/assets/d62a86cf-85f6-4a1b-a931-67166eaad541" />
+<img width="1364" height="570" alt="image" src="https://github.com/user-attachments/assets/208134a1-fd0d-4724-8ee9-8e8dd5261d66" />
+
 
 
 Analysis of Results: The benchmark clearly demonstrates the superior performance of the Manhattan Distance (h_2) heuristic compared to the Hamming Distance (h1​).
