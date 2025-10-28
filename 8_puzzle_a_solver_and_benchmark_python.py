@@ -366,7 +366,7 @@ def ui_benchmark():
 # ----------------------------- Main menu ------------------------------------
 
 # This is the main function — it shows the menu and lets the user
-# choose what they want to do: solve one puzzle, run benchmarks, or quit.
+# choose what they want to do: solve one puzzle or run benchmarks, or quit.
 def main():
     # Print the program title
     print("8-Puzzle A* Solver (Hamming & Manhattan)")
